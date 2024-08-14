@@ -1,0 +1,9 @@
+# folders
+.vs/
+.vscode/
+obj/
+bin/
+
+# files
+# app-settings.json
+*.user
