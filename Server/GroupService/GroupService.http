@@ -1,0 +1,6 @@
+@GroupService_HostAddress = http://localhost:5286
+
+GET {{GroupService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
