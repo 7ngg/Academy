@@ -2,7 +2,7 @@ namespace DataLayer.Models
 {
     public enum Roles
     {
-        ADMIN,
+        ADMIN = 0,
         TEACHER,
         STUDENT
     }

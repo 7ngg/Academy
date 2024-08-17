@@ -22,7 +22,7 @@ namespace DataLayer.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("DataLayer.Models.Departmnet", b =>
+            modelBuilder.Entity("DataLayer.Models.Department", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,9 +30,14 @@ namespace DataLayer.Migrations
                         .HasDefaultValueSql("NEWID()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Departmnets");
                 });
@@ -65,9 +70,14 @@ namespace DataLayer.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("FacultyId");
+
+                    b.HasIndex("TeacherId");
 
                     b.ToTable("Groups");
                 });
@@ -94,6 +104,68 @@ namespace DataLayer.Migrations
                     b.ToTable("Schedule");
                 });
 
+            modelBuilder.Entity("DataLayer.Models.Student", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Students");
+                });
+
+            modelBuilder.Entity("DataLayer.Models.Teacher", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Teachers");
+                });
+
             modelBuilder.Entity("DataLayer.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -101,26 +173,15 @@ namespace DataLayer.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWID()");
 
-                    b.Property<Guid?>("DepartmnetId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<Guid?>("GroupId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<bool>("IsEmailConfirmed")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("nvarchar(24)");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -134,17 +195,12 @@ namespace DataLayer.Migrations
                     b.Property<DateTime>("RefreshTokenExpiryTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
-                        .HasDefaultValue(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
+                        .HasDefaultValue(new DateTime(2024, 8, 17, 0, 37, 23, 767, DateTimeKind.Utc).AddTicks(5391));
 
                     b.Property<int>("Role")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(2);
-
-                    b.Property<string>("Surname")
-                        .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("nvarchar(24)");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -153,12 +209,8 @@ namespace DataLayer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DepartmnetId");
-
                     b.HasIndex("Email")
                         .IsUnique();
-
-                    b.HasIndex("GroupId");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -168,14 +220,13 @@ namespace DataLayer.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("6193c4e6-2eb7-42da-b686-69dd4ebf43c0"),
-                            Email = "ADmin",
-                            IsEmailConfirmed = false,
-                            Name = "admin",
+                            Id = new Guid("b68d2dfc-8a9d-4e14-b1a4-6fc5c56f9e17"),
+                            Email = "Admin",
+                            IsEmailConfirmed = true,
                             Password = "admin",
-                            RefreshTokenExpiryTime = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            RefreshToken = "",
+                            RefreshTokenExpiryTime = new DateTime(2024, 8, 17, 0, 37, 23, 767, DateTimeKind.Utc).AddTicks(7916),
                             Role = 0,
-                            Surname = "admin",
                             Username = "admin"
                         });
                 });
@@ -188,7 +239,15 @@ namespace DataLayer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DataLayer.Models.Teacher", "Teacher")
+                        .WithMany("Groups")
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Faculty");
+
+                    b.Navigation("Teacher");
                 });
 
             modelBuilder.Entity("DataLayer.Models.Schedule", b =>
@@ -196,13 +255,13 @@ namespace DataLayer.Migrations
                     b.HasOne("DataLayer.Models.Group", "Group")
                         .WithMany()
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("DataLayer.Models.User", "Teacher")
                         .WithMany()
                         .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Group");
@@ -210,18 +269,45 @@ namespace DataLayer.Migrations
                     b.Navigation("Teacher");
                 });
 
-            modelBuilder.Entity("DataLayer.Models.User", b =>
+            modelBuilder.Entity("DataLayer.Models.Student", b =>
                 {
-                    b.HasOne("DataLayer.Models.Departmnet", null)
-                        .WithMany("Teachers")
-                        .HasForeignKey("DepartmnetId");
-
-                    b.HasOne("DataLayer.Models.Group", null)
+                    b.HasOne("DataLayer.Models.Group", "Group")
                         .WithMany("Students")
-                        .HasForeignKey("GroupId");
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataLayer.Models.User", "User")
+                        .WithOne()
+                        .HasForeignKey("DataLayer.Models.Student", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DataLayer.Models.Departmnet", b =>
+            modelBuilder.Entity("DataLayer.Models.Teacher", b =>
+                {
+                    b.HasOne("DataLayer.Models.Department", "Department")
+                        .WithMany("Teachers")
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataLayer.Models.User", "User")
+                        .WithOne()
+                        .HasForeignKey("DataLayer.Models.Teacher", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Department");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DataLayer.Models.Department", b =>
                 {
                     b.Navigation("Teachers");
                 });
@@ -234,6 +320,11 @@ namespace DataLayer.Migrations
             modelBuilder.Entity("DataLayer.Models.Group", b =>
                 {
                     b.Navigation("Students");
+                });
+
+            modelBuilder.Entity("DataLayer.Models.Teacher", b =>
+                {
+                    b.Navigation("Groups");
                 });
 #pragma warning restore 612, 618
         }

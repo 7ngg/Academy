@@ -2,12 +2,12 @@
 
 namespace DataLayer.Models 
 {
-    public class Departmnet
+    public class Department
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
         public string Name { get; set; }
 
-        public ICollection<User> Teachers { get; set; } = [];
+        public ICollection<Teacher> Teachers { get; set; } = [];
     }
 }

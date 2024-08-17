@@ -11,6 +11,9 @@ namespace DataLayer.Models
         public Guid FacultyId { get; set; }
         public Faculty Faculty { get; set; }
 
-        public ICollection<User> Students { get; set; } = [];
+        public Guid TeacherId { get; set; }
+        public Teacher Teacher { get; set; }
+
+        public ICollection<Student> Students { get; set; } = [];
     }
 }
