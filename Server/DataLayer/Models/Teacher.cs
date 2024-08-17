@@ -10,9 +10,6 @@ namespace DataLayer.Models
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-
         public ICollection<Group> Groups { get; set; } = [];
 
         public Guid DepartmentId { get; set; }

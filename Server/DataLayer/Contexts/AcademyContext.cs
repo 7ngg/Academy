@@ -39,7 +39,7 @@ namespace DataLayer.Contexts
                     .HasDefaultValue(DateTime.UtcNow);
                 user.Property(u => u.Role).HasDefaultValue(Roles.STUDENT);
 
-                user.Property(u => u.Password).IsRequired();
+                user.Property(u => u.PasswordHash).IsRequired();
 
                 user.Property(u => u.Username)
                     .HasMaxLength(24)
@@ -51,12 +51,23 @@ namespace DataLayer.Contexts
                     .IsRequired();
                 user.HasIndex(u => u.Email).IsUnique();
 
+                user.Property(u => u.FirstName)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                user.Property(u => u.LastName)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+
                 user.HasData(new User
                 {
                     Id = Guid.Parse("b68d2dfc-8a9d-4e14-b1a4-6fc5c56f9e17"),
-                    Password = "admin",
-                    Email = "Admin",
+                    PasswordHash = BCrypt.Net.BCrypt.EnhancedHashPassword("admin"),
+                    Email = "admin@academy.com",
                     Username = "admin",
+                    FirstName = "Admin",
+                    LastName = "Admin",
                     Role = Roles.ADMIN,
                     IsEmailConfirmed = true,
                     RefreshToken = string.Empty,
