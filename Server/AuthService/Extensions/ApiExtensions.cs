@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 namespace AuthService.Extensions
@@ -23,7 +24,8 @@ namespace AuthService.Extensions
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(jwtOptions!.SecretKey))
+                            Encoding.UTF8.GetBytes(jwtOptions!.SecretKey)),
+                        RoleClaimType = ClaimTypes.Role
                     };
 
                     opts.Events = new JwtBearerEvents

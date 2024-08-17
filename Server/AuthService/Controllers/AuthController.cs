@@ -47,7 +47,7 @@ namespace AuthService.Controllers
         }
 
         [HttpPost("check")]
-        [Authorize]
+        [Authorize(Roles = "STUDENT")]
         public IActionResult Check()
         {
             return Ok("Authorized");

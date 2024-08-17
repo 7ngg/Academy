@@ -12,10 +12,10 @@ namespace AuthService.Extensions
             {
                 Id = userId,
                 Username = username,
-                Password = passwordHash,
+                PasswordHash = passwordHash,
                 Email = email,
-                Name = name,
-                Surname = surname,
+                FirstName = name,
+                LastName = surname
             };
         }
     }

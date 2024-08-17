@@ -40,7 +40,7 @@ namespace AuthService.Services
                 // Exception
             }
 
-            var passwordCheck = _passwordHasher.Verify(password, user.Password);
+            var passwordCheck = _passwordHasher.Verify(password, user.PasswordHash);
 
             if (!passwordCheck)
             {
