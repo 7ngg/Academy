@@ -1,4 +1,5 @@
 ﻿using AuthService.Data.DTOs;
+using AuthService.Interfaces;
 using AuthService.Services;
 using AuthService.Validators;
 using DataLayer.Contexts;
@@ -11,11 +12,19 @@ namespace AuthService.Controllers
     {
         private readonly AcademyContext _context;
         private readonly UserService _userService;
+        private readonly ITokenService _tokenService;
 
-        public AuthController(AcademyContext context, UserService userService)
+        public AuthController(AcademyContext context, UserService userService, ITokenService tokenService)
         {
             _context = context;
             _userService = userService;
+            _tokenService = tokenService;
+        }
+
+        [HttpGet("RefreshTokenTest")]
+        public IActionResult RefreshTokenTest()
+        {
+            return Ok(_tokenService.GenerateRefreshToken());
         }
 
         [HttpPost("signup")]
@@ -39,9 +48,10 @@ namespace AuthService.Controllers
                 return BadRequest(ModelState);
             }
 
-            var token = await _userService.SignIn(request.Username, request.Password);
+            var tokenData = await _userService.SignIn(request.Username, request.Password);
 
-            HttpContext.Response.Cookies.Append("tasty-cookies", token);
+            HttpContext.Response.Cookies.Append("tasty-cookies", tokenData.AccessToken);
+            HttpContext.Response.Cookies.Append("refresh-tasty-cookies", tokenData.RefreshToken);
 
             return Ok();
         }

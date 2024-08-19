@@ -1,8 +1,8 @@
-﻿using AuthService.Data.DTOs;
+﻿using AuthService.Data;
+using AuthService.Data.DTOs;
 using AuthService.Extensions;
-using AuthService.Infrastructure;
 using AuthService.Interfaces;
-using DataLayer.Models;
+using DataLayer.Contexts;
 
 namespace AuthService.Services
 {
@@ -12,11 +12,18 @@ namespace AuthService.Services
         private readonly IUserRepository _userRepository;
         private readonly ITokenService _tokenService;
 
-        public UserService(IPasswordHasher passwordHasher, IUserRepository userRepository, ITokenService tokenService)
+        private readonly AcademyContext _context;
+
+        public UserService(
+            IPasswordHasher passwordHasher,
+            IUserRepository userRepository,
+            ITokenService tokenService,
+            AcademyContext context)
         {
             _passwordHasher = passwordHasher;
             _userRepository = userRepository;
             _tokenService = tokenService;
+            _context = context;
         }
 
         public async Task SignUp(SignUpDTO request)
@@ -31,7 +38,7 @@ namespace AuthService.Services
             await _userRepository.AddAsync(user);
         }
 
-        public async Task<string> SignIn(string username, string password)
+        public async Task<TokenData> SignIn(string username, string password)
         {
             var user = await _userRepository.GetByUsernameAsync(username);
 
@@ -44,12 +51,53 @@ namespace AuthService.Services
 
             if (!passwordCheck)
             {
-                // Exception
+                // TODO: Custom exception
+                throw new Exception("Что то случилось");
             }
 
-            var token = _tokenService.Generate(user);
+            var accesstoken = await _tokenService.Generate(user);
+            var refreshToken = await _tokenService.GenerateRefreshToken();
 
-            return token;
+            return new()
+            {
+                AccessToken = accesstoken,
+                RefreshToken = refreshToken,
+                RefreshTokenExpired = DateTime.UtcNow.AddDays(1),
+            };
+        }
+
+        public async Task<TokenData> RefreshTokenAsync(TokenData data)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+
+            var principal = await _tokenService.GetPrincipalFromExpiredToken(data.AccessToken);
+
+            var userId = principal.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user is null ||
+                user.RefreshToken != data.RefreshToken ||
+                user.RefreshTokenExpiryTime < DateTime.Now)
+            {
+                // TODO: Custom Exception
+                throw new Exception($"From {nameof(RefreshTokenAsync)}");
+            }
+
+            var accessToken = await _tokenService.Generate(user);
+            var refreshToken = await _tokenService.GenerateRefreshToken();
+            var expiryTime = DateTime.UtcNow.AddDays(1);
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = expiryTime;
+
+            await _context.SaveChangesAsync();
+
+            return new TokenData()
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                RefreshTokenExpired = expiryTime
+            };
         }
     }
 }
