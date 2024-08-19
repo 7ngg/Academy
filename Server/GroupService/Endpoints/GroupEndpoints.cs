@@ -2,6 +2,8 @@
 using DataLayer.Models;
 using GroupService.Data;
 using GroupService.Infrastructure;
+using GroupService.Repositories.Interfaces;
+using GroupService.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace GroupService.Endpoints
@@ -53,32 +55,18 @@ namespace GroupService.Endpoints
             return app;
         }
 
-        private static async Task<IResult> GetAllGroups(AcademyContext context)
+        private static async Task<IResult> GetAllGroups(IGroupRepository groupRepository)
         {
-            var groups = await context.Groups
-                .Include(g => g.Faculty)
-                .Include(g => g.Teacher)
-                .ThenInclude(t => t.User)
-                .Include(g => g.Students)
-                .ThenInclude(s => s.User)
-                .ToListAsync();
+            var groups = await groupRepository.GetAllAsync();
 
-            var groupDtos = groups.Select(g => GroupDtoProvider.Generate(g)).ToList();
-
-            return Results.Ok(groupDtos);
+            return Results.Ok(groups);
         }
 
         private static async Task<IResult> GetGroupById(
             Guid id,
-            AcademyContext context)
+            IGroupRepository groupRepository)
         {
-            var group = await context.Groups
-                .Include(g => g.Faculty)
-                .Include(g => g.Teacher)
-                .ThenInclude(t => t.User)
-                .Include(g => g.Students)
-                .ThenInclude(s => s.User)
-                .FirstOrDefaultAsync(g => g.Id == id);
+            var group = await groupRepository.GetByIdAsync(id);
 
             if (group == null)
             {
@@ -92,19 +80,14 @@ namespace GroupService.Endpoints
 
         private static async Task<IResult> CreateGroup(
             AddGroupDTO groupDto,
-            AcademyContext context)
+            IGroupRepository groupRepository,
+            IGroupService groupService)
         {
-            var group = new Group()
-            {
-                Name = groupDto.Name,
-                FacultyId = groupDto.FacultyId,
-                TeacherId = groupDto.TeacherId,
-            };
+            var group = groupService.Create(groupDto);
 
             try
             {
-                await context.Groups.AddAsync(group);
-                await context.SaveChangesAsync();
+                await groupRepository.AddAsync(group);
 
                 return Results.Created(nameof(CreateGroup), group);
             }
@@ -116,9 +99,9 @@ namespace GroupService.Endpoints
 
         private static async Task<IResult> RemoveGroup(
             Guid id,
-            AcademyContext context)
+            IGroupRepository groupRepository)
         {
-            var group = await context.Groups.FindAsync(id);
+            var group = await groupRepository.GetByIdAsync(id);
 
             if (group == null)
             {
@@ -127,9 +110,7 @@ namespace GroupService.Endpoints
 
             try
             {
-                context.Groups.Remove(group);
-
-                await context.SaveChangesAsync();
+                await groupRepository.RemoveAsync(group);
 
                 return Results.Ok();
             }
@@ -142,52 +123,15 @@ namespace GroupService.Endpoints
         private static async Task<IResult> AddStudentToGroup(
             Guid groupId,
             Guid studentId,
-            AcademyContext context)
+            IGroupService groupService)
         {
-            var student = await context.Students.FindAsync(studentId);
-
-            if (student == null)
-            {
-                return Results.NotFound("Required student does not exist");
-            }
-
-            var group = await context.Groups.FindAsync(groupId);
-
-            if (group == null)
-            {
-                return Results.NotFound("Required group does not exist");
-            }
-
-            group.Students.Add(student);
-            await context.SaveChangesAsync();
-
-            return Results.Ok();
-        }
-
-        private static async Task<IResult> RemoveStudentFromGroup(
-            Guid groupId,
-            Guid studentId,
-            AcademyContext context)
-        {
-            var student = await context.Students.FindAsync(studentId);
-
-            if (student == null)
-            {
-                return Results.NotFound("Required student does not exist");
-            }
-
-            var group = await context.Groups.FindAsync(groupId);
-
-            if (group == null)
-            {
-                return Results.NotFound("Required group does not exist");
-            }
-
             try
             {
-                group.Students.Remove(student);
-
-                await context.SaveChangesAsync();
+                var result = await groupService.AddStudent(studentId, groupId);
+                if (!result)
+                {
+                    return Results.Problem("Error while preccessing");
+                }
 
                 return Results.Ok();
             }
@@ -196,65 +140,72 @@ namespace GroupService.Endpoints
                 return Results.Problem(e.Message);
             }
         }
-    
+
+        private static async Task<IResult> RemoveStudentFromGroup(
+            Guid groupId,
+            Guid studentId,
+            IGroupService groupService)
+        {
+
+            try
+            {
+                var result = await groupService.RemoveStudent(studentId, groupId);
+
+                if (!result)
+                {
+                    return Results.Problem("Error while precessing");
+                }
+
+                return Results.Ok();
+            }
+            catch (Exception e)
+            {
+                return Results.Problem(e.Message);
+            }
+        }
+
         private static async Task<IResult> ChangeGroupTeacher(
             Guid teacherId,
             Guid groupId,
-            AcademyContext context)
+            IGroupService groupService)
         {
-            var group = await context.Groups.FindAsync(groupId);
-
-            if (group == null)
+            try
             {
-                return Results.NotFound("Required group does not exist");
+                var result = await groupService.ChangeTeacher(teacherId, groupId);
+
+                if (!result)
+                {
+                    return Results.Problem("Error while precessing");
+                }
+
+                return Results.Ok();
             }
-
-            var teacher = await context.Teachers.FindAsync(teacherId);
-
-            if (teacher == null)
+            catch (Exception e)
             {
-                return Results.NotFound("Required teacher does not exist");
+                return Results.Problem(e.Message);
             }
-
-            if (group.TeacherId == teacherId)
-            {
-                return Results.NoContent();
-            }
-
-            group.TeacherId = teacherId;
-
-            await context.SaveChangesAsync();
-        
-            return Results.Ok();
         }
 
         private static async Task<IResult> RenameGroup(
             Guid id,
             string newName,
-            AcademyContext context)
+            IGroupService groupService)
         {
             if (string.IsNullOrEmpty(newName))
             {
                 return Results.BadRequest("Group name cannot be empty");
             }
 
-            var group = await context.Groups.FindAsync(id);
-
-            if (group == null)
+            try
             {
-                return Results.NotFound("Required group does not exist");
-            }
+                var updatedGroup = await groupService.Rename(id, newName);
 
-            if (group.Name == newName)
+                return Results.Ok();
+            }
+            catch (Exception e)
             {
-                return Results.NoContent();
+                return Results.Problem(e.Message);
             }
-
-            group.Name = newName;
-
-            await context.SaveChangesAsync();
-
-            return Results.Ok();
         }
 
     }

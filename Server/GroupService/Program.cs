@@ -1,5 +1,8 @@
 using DataLayer.Contexts;
 using GroupService.Endpoints;
+using GroupService.Repositories;
+using GroupService.Repositories.Interfaces;
+using GroupService.Services;
 using JwtPreset;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +12,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddApiAuthentication(builder.Configuration);
+
+builder.Services.AddScoped<IGroupRepository, GroupRepository>();
+builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
+
+builder.Services.AddScoped<IGroupService, GroupService.Services.GroupService>();
 
 builder.Services.AddDbContext<AcademyContext>(opts =>
 {
