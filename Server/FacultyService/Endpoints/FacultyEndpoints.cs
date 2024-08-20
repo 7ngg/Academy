@@ -1,4 +1,5 @@
 ﻿using FacultyService.Repositories.Interfaces;
+using FacultyService.Services;
 
 namespace FacultyService.Endpoints
 {
@@ -15,6 +16,18 @@ namespace FacultyService.Endpoints
                 .RequireAuthorization("ADMIN")
                 .WithDisplayName(nameof(GetFacultyById))
                 .WithDescription("Returns a specifies faculty by id")
+                .WithOpenApi();
+
+            app.MapDelete("faculties/{id}", RemoveFaculty)
+                .RequireAuthorization("ADMIN")
+                .WithDisplayName(nameof(RemoveFaculty))
+                .WithDescription("Remove a specified faculty by id")
+                .WithOpenApi();
+
+            app.MapPatch("faculties/{id}", RenameFaculty)
+                .RequireAuthorization("ADMIN")
+                .WithDisplayName(nameof(RenameFaculty))
+                .WithDescription("Renames a faculty by id")
                 .WithOpenApi();
 
             return app;
@@ -34,6 +47,39 @@ namespace FacultyService.Endpoints
             {
                 var faculty = await facultyRepository.GetById(id);
                 return Results.Ok(faculty);
+            }
+            catch (Exception e)
+            {
+                return Results.Problem(e.Message);
+            }
+        }
+
+        private static async Task<IResult> RemoveFaculty(
+            Guid id,
+            IFacultyRepository facultyRepository)
+        {
+            try
+            {
+                await facultyRepository.RemoveAsync(id);
+
+                return Results.Ok();
+            }
+            catch (Exception e)
+            {
+                return Results.Problem(e.Message);
+            }
+        }
+
+        private static async Task<IResult> RenameFaculty(
+            Guid id,
+            string newName,
+            IFacultyService facultyService)
+        {
+            try
+            {
+                await facultyService.Rename(id, newName);
+
+                return Results.Accepted();
             }
             catch (Exception e)
             {

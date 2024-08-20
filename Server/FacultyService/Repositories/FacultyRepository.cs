@@ -15,6 +15,11 @@ namespace FacultyService.Repositories
             _context = context;
         }
 
+        public async Task Save()
+        {
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<IEnumerable<FacultyDto>> GetAll()
         {
             var faculties = await _context.Faculties
@@ -28,7 +33,9 @@ namespace FacultyService.Repositories
 
         public async Task<FacultyDto> GetById(Guid id)
         {
-            var faculty = await _context.Faculties.FindAsync(id);
+            var faculty = await _context.Faculties
+                .Include(f => f.Groups)
+                .FirstOrDefaultAsync(f => f.Id == id);
 
             if (faculty is null)
             {
@@ -37,6 +44,28 @@ namespace FacultyService.Repositories
             }
 
             return FacultyDtoProvider.Generate(faculty);
+        }
+
+        public async Task RemoveAsync(Guid id)
+        {
+            var faculty = await _context.Faculties.FindAsync(id);
+
+            if (faculty is null)
+            {
+                // TODO: Custom exception
+                throw new NullReferenceException(nameof(faculty));
+            }
+
+            try
+            {
+                _context.Remove(faculty);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+            await _context.SaveChangesAsync();
         }
     }
 }

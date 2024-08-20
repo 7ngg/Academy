@@ -20,7 +20,7 @@ namespace DataLayer.Contexts
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-            var connectionString = config.GetConnectionString("Local");
+            var connectionString = config.GetConnectionString("Step");
             optionsBuilder.UseSqlServer(connectionString);
         }
 
