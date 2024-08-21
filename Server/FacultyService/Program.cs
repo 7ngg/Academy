@@ -2,6 +2,7 @@ using DataLayer.Contexts;
 using FacultyService.Endpoints;
 using FacultyService.Repositories;
 using FacultyService.Repositories.Interfaces;
+using FacultyService.Services;
 using JwtPreset;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,7 +18,12 @@ builder.Services.AddDbContext<AcademyContext>(opts =>
     opts.UseSqlServer(builder.Configuration.GetConnectionString("Local"));
 });
 
-builder.Services.AddScoped<IFacultyRepository, FacultyRepository>();    
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+builder.Services.AddScoped<IFacultyRepository, FacultyRepository>();
+builder.Services.AddScoped<IGroupRepository, GroupRepository>();
+
+builder.Services.AddScoped<IFacultyService, FacultyService.Services.FacultyService>();
 
 var app = builder.Build();
 

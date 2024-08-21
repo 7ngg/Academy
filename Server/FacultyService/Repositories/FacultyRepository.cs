@@ -1,6 +1,5 @@
 ﻿using DataLayer.Contexts;
-using FacultyService.Data;
-using FacultyService.Infrastructure;
+using DataLayer.Models;
 using FacultyService.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,30 +19,22 @@ namespace FacultyService.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<FacultyDto>> GetAll()
+        public async Task<IEnumerable<Faculty>> GetAll()
         {
             var faculties = await _context.Faculties
                 .Include(f => f.Groups)
                 .ToListAsync();
 
-            var facultyDtos = faculties.Select(f => FacultyDtoProvider.Generate(f));
-
-            return facultyDtos;
+            return faculties;
         }
 
-        public async Task<FacultyDto> GetById(Guid id)
+        public async Task<Faculty> GetById(Guid id)
         {
             var faculty = await _context.Faculties
                 .Include(f => f.Groups)
                 .FirstOrDefaultAsync(f => f.Id == id);
 
-            if (faculty is null)
-            {
-                // TODO: Custom exception
-                throw new NullReferenceException(nameof(faculty));
-            }
-
-            return FacultyDtoProvider.Generate(faculty);
+            return faculty;
         }
 
         public async Task RemoveAsync(Guid id)
@@ -66,6 +57,13 @@ namespace FacultyService.Repositories
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        public async Task AddAsync(Faculty faculty)
+        {
+            ArgumentNullException.ThrowIfNull(faculty);
+
+            await _context.AddAsync(faculty);
         }
     }
 }
