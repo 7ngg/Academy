@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using DataLayer.Models;
-using FacultyService.Data;
+using FacultyService.Data.Dtos;
 
 namespace FacultyService.Profiles
 {

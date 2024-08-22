@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using FacultyService.Data;
+using FacultyService.Data.Dtos;
 using FacultyService.Repositories.Interfaces;
 using FacultyService.Services;
 
@@ -92,16 +92,16 @@ namespace FacultyService.Endpoints
             string newName,
             IFacultyService facultyService)
         {
-            try
-            {
-                await facultyService.Rename(id, newName);
+            (var faculty, var error) = await facultyService.Rename(id, newName);
 
-                return Results.Accepted();
-            }
-            catch (Exception e)
+            if (error is not null)
             {
-                return Results.Problem(e.Message);
+                return Results.Problem(
+                    statusCode: error.Code,
+                    detail: error.Message);
             }
+
+            return Results.Ok(faculty);
         }
 
         private static async Task<IResult> CreateFaculty(
@@ -122,26 +122,41 @@ namespace FacultyService.Endpoints
             IFacultyService facultyService,
             IMapper mapper)
         {
-            var faculty = await facultyService.AddGroup(facultyId, groupId);
+            (var faculty, var error) = await facultyService.AddGroup(facultyId, groupId);
+
+            if (error is not null)
+            {
+                return Results.Problem($"{error.Code}: {error.Message}");
+            }
 
             var dto = mapper.Map<FacultyDto>(faculty);
 
             return Results.AcceptedAtRoute(
                 nameof(AddGroupToFaculty),
-                new { faculty.Id },
+                new { faculty!.Id },
                 dto);
         }
 
         private static async Task<IResult> RemoveGroupFromFaculty(
             Guid facultyId,
             Guid groupId,
-            IFacultyService facultyService)
+            IFacultyService facultyService,
+            IMapper mapper)
         {
             try
             {
-                await facultyService.RemoveGroup(facultyId, groupId);
+                (var faculty, var error) = await facultyService.RemoveGroup(facultyId, groupId);
 
-                return Results.Accepted();
+                if (error is not null)
+                {
+                    return Results.Problem($"{error.Code}: {error.Message}");
+                }
+
+                var dto = mapper.Map<FacultyDto>(faculty);
+                return Results.AcceptedAtRoute(
+                    nameof(RemoveGroupFromFaculty),
+                    new { faculty!.Id},
+                    dto);
             }
             catch (Exception e)
             {

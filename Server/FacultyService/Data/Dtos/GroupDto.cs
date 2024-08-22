@@ -1,4 +1,4 @@
-﻿namespace FacultyService.Data
+﻿namespace FacultyService.Data.Dtos
 {
     public class GroupDto
     {

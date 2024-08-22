@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using DataLayer.Models;
 using FacultyService.Data;
+using FacultyService.Data.Dtos;
 using FacultyService.Repositories.Interfaces;
 
 namespace FacultyService.Services
@@ -21,25 +22,25 @@ namespace FacultyService.Services
             _groupRepository = groupRepository;
         }
 
-        public async Task Rename(Guid id, string newName)
+        public async Task<(Faculty? updated, Error? error)> Rename(Guid id, string newName)
         {
-            try
-            {
-                var faculty = await _facultyRepository.GetById(id);
-            
-                if (faculty.Name.Equals(newName))
-                {
-                    return;
-                }
+            var faculty = await _facultyRepository.GetById(id);
 
-                faculty.Name = newName;
-
-                await _facultyRepository.Save();
-            }
-            catch (Exception)
+            if (faculty is null)
             {
-                throw;
+                return (null, new Error(404, "Faculty does not exist"));
             }
+
+            if (faculty.Name.Equals(newName))
+            {
+                return (faculty, null);
+            }
+
+            faculty.Name = newName;
+
+            await _facultyRepository.Save();
+
+            return (faculty, null);
         }
 
         public async Task<Faculty> CreateFaculty(FacultyCreateDto newFaculty)
@@ -52,13 +53,27 @@ namespace FacultyService.Services
             return faculty;
         }
 
-        public async Task<Faculty> AddGroup(Guid facultyId, Guid groupId)
+        public async Task<(Faculty? created, Error? error)> AddGroup(
+            Guid facultyId,
+            Guid groupId)
         {
-            var faculty = await _facultyRepository.GetById(facultyId) 
-                ?? throw new NullReferenceException("Faculty does not exist");
+            var faculty = await _facultyRepository.GetById(facultyId);
 
-            var group = await _groupRepository.GetById(groupId)
-                ?? throw new NullReferenceException("Group does not exist");
+            if (faculty is null)
+            {
+                return (
+                    null,
+                    new Error(404, "Faculty does not exist"));
+            }
+
+            var group = await _groupRepository.GetById(groupId);
+
+            if (group is null)
+            {
+                return (
+                    null,
+                    new Error(404, "Group does not exist"));
+            }
 
             group.FacultyId = faculty.Id;
             group.Faculty = faculty;
@@ -66,20 +81,34 @@ namespace FacultyService.Services
 
             await _facultyRepository.Save();
 
-            return faculty;
+            return (faculty, null);
         }
 
-        public async Task RemoveGroup(Guid facultyId, Guid groupId)
+        public async Task<(Faculty? updated, Error? error)> RemoveGroup(Guid facultyId, Guid groupId)
         {
-            var faculty = await _facultyRepository.GetById(facultyId)
-                ?? throw new NullReferenceException("Faculty does not exist");
+            var faculty = await _facultyRepository.GetById(facultyId);
 
-            var group = await _groupRepository.GetById(groupId)
-                ?? throw new NullReferenceException("Group does not exist");
+            if (faculty is null)
+            {
+                return (
+                    null,
+                    new Error(404, "Faculty doest not exist"));
+            }
+
+            var group = await _groupRepository.GetById(groupId);
+
+            if (group is null)
+            {
+                return (
+                    null,
+                    new Error(404, "Group doest not exist"));
+            }
 
             faculty.Groups.Remove(group);
 
             await _facultyRepository.Save();
+
+            return (faculty, null);
         }
     }
 }
