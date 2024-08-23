@@ -2,9 +2,9 @@ using DataLayer.Contexts;
 using GroupService.Endpoints;
 using GroupService.Repositories;
 using GroupService.Repositories.Interfaces;
-using GroupService.Services;
 using JwtPreset;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +17,7 @@ builder.Services.AddScoped<IGroupRepository, GroupRepository>();
 builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
 
-builder.Services.AddScoped<IGroupService, GroupService.Services.GroupService>();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddDbContext<AcademyContext>(opts =>
 {

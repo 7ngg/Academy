@@ -1,7 +1,6 @@
 ﻿using DataLayer.Contexts;
 using DataLayer.Models;
-using GroupService.Data;
-using GroupService.Infrastructure;
+using GroupService.Data.Dtos;
 using GroupService.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,7 +33,7 @@ namespace GroupService.Repositories
             }
         }
 
-        public async Task<IEnumerable<GroupDTO>> GetAllAsync()
+        public async Task<IEnumerable<Group>> GetAllAsync()
         {
             var groups = await _context.Groups
                 .Include(g => g.Faculty)
@@ -44,9 +43,8 @@ namespace GroupService.Repositories
                 .ThenInclude(s => s.User)
                 .ToListAsync();
 
-            var groupDtos = groups.Select(g => GroupDtoProvider.Generate(g)).ToList();
 
-            return groupDtos;
+            return groups;
         }
 
         public async Task<Group?> GetByIdAsync(Guid id)
@@ -62,7 +60,7 @@ namespace GroupService.Repositories
             return group;
         }
 
-        public async Task RemoveAsync(Group group)
+        public async Task DeleteAsync(Group group)
         {
             try
             {

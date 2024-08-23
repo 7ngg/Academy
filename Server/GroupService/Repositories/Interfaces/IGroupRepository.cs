@@ -1,14 +1,14 @@
 ﻿using DataLayer.Models;
-using GroupService.Data;
+using GroupService.Data.Dtos;
 
 namespace GroupService.Repositories.Interfaces
 {
     public interface IGroupRepository
     {
         Task AddAsync(Group group);
-        Task<IEnumerable<GroupDTO>> GetAllAsync();
+        Task<IEnumerable<Group>> GetAllAsync();
         Task<Group?> GetByIdAsync(Guid id);
-        Task RemoveAsync(Group group);
+        Task DeleteAsync(Group group);
         Task SaveAsync();
     }
 }

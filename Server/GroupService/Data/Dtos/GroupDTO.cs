@@ -1,4 +1,4 @@
-﻿namespace GroupService.Data
+﻿namespace GroupService.Data.Dtos
 {
     public class GroupDTO
     {

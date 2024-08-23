@@ -1,10 +1,9 @@
-﻿using DataLayer.Contexts;
+﻿using AutoMapper;
 using DataLayer.Models;
-using GroupService.Data;
-using GroupService.Infrastructure;
+using GroupService.Data.Dtos;
+using GroupService.Repositories;
 using GroupService.Repositories.Interfaces;
-using GroupService.Services;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace GroupService.Endpoints
 {
@@ -13,41 +12,34 @@ namespace GroupService.Endpoints
         public static IEndpointRouteBuilder MapGroupEndpoint(this IEndpointRouteBuilder app)
         {
             app.MapGet("groups", GetAllGroups)
-                .RequireAuthorization("ADMIN")
                 .WithName(nameof(GetAllGroups))
                 .WithDescription("Return a list of all groups");
 
             app.MapGet("groups/{id}", GetGroupById)
-                .RequireAuthorization()
                 .WithName(nameof(GetGroupById))
                 .WithDescription("Return a specified group by id");
 
             app.MapPost("groups", CreateGroup)
-                .RequireAuthorization("ADMIN")
                 .WithName(nameof(CreateGroup))
                 .WithDescription("Creates new group");
 
             app.MapPost("groups/{groupId}/students", AddStudentToGroup)
-                .RequireAuthorization("ADMIN")
                 .WithName(nameof(AddStudentToGroup))
                 .WithDescription("Adds a student to the group");
 
-            app.MapDelete("/groups/{id}", RemoveGroup)
-                .RequireAuthorization("ADMIN")
-                .WithName(nameof(RemoveGroup))
+            app.MapDelete("/groups/{id}", DeleteGroup)
+                .WithName(nameof(DeleteGroup))
                 .WithDescription("Removes groups with a specified id");
 
             app.MapDelete("groups/{groupId}/students/{studentId}", RemoveStudentFromGroup)
-                .RequireAuthorization("ADMIN")
                 .WithName(nameof(RemoveStudentFromGroup))
                 .WithDescription("Removes a student from group");
 
-            app.MapPut("groups/{groupId}/teacher", ChangeGroupTeacher)
-                .RequireAuthorization("ADMIN")
+            app.MapPatch("groups/{groupId}/teacher", ChangeGroupTeacher)
                 .WithName(nameof(ChangeGroupTeacher))
                 .WithDescription("Changes group's teacher");
 
-            app.MapPut("groups/{id}", RenameGroup)
+            app.MapPatch("groups/{id}", RenameGroup)
                 .RequireAuthorization("ADMIN")
                 .WithName(nameof(RenameGroup))
                 .WithDescription("Changes group's name");
@@ -55,41 +47,47 @@ namespace GroupService.Endpoints
             return app;
         }
 
-        private static async Task<IResult> GetAllGroups(IGroupRepository groupRepository)
+        private static async Task<IResult> GetAllGroups(
+            IGroupRepository groupRepository,
+            IMapper mapper)
         {
             var groups = await groupRepository.GetAllAsync();
+            var dtos = mapper.Map<IEnumerable<GroupDTO>>(groups);
 
-            return Results.Ok(groups);
+            return Results.Ok(dtos);
         }
 
         private static async Task<IResult> GetGroupById(
             Guid id,
-            IGroupRepository groupRepository)
+            IGroupRepository groupRepository,
+            IMapper mapper)
         {
             var group = await groupRepository.GetByIdAsync(id);
 
-            if (group == null)
+            if (group is null)
             {
                 return Results.NotFound("Required group does not exists");
             }
 
-            var groupDto = GroupDtoProvider.Generate(group);
+            var dto = mapper.Map<GroupDTO>(group);
 
-            return Results.Ok(groupDto);
+            return Results.Ok(dto);
         }
 
         private static async Task<IResult> CreateGroup(
-            AddGroupDTO groupDto,
+            GroupCreateDto request,
             IGroupRepository groupRepository,
-            IGroupService groupService)
+            IMapper mapper)
         {
-            var group = groupService.Create(groupDto);
+            var group = mapper.Map<Group>(request);
 
             try
             {
                 await groupRepository.AddAsync(group);
 
-                return Results.Created(nameof(CreateGroup), group);
+                var dto = mapper.Map<GroupDTO>(group);
+
+                return Results.CreatedAtRoute(nameof(GetGroupById), new { group.Id }, dto);
             }
             catch (Exception e)
             {
@@ -97,22 +95,22 @@ namespace GroupService.Endpoints
             }
         }
 
-        private static async Task<IResult> RemoveGroup(
+        private static async Task<IResult> DeleteGroup(
             Guid id,
             IGroupRepository groupRepository)
         {
             var group = await groupRepository.GetByIdAsync(id);
 
-            if (group == null)
+            if (group is null)
             {
                 return Results.NotFound("The group does not exist");
             }
 
             try
             {
-                await groupRepository.RemoveAsync(group);
+                await groupRepository.DeleteAsync(group);
 
-                return Results.Ok();
+                return Results.NoContent();
             }
             catch (Exception e)
             {
@@ -123,17 +121,37 @@ namespace GroupService.Endpoints
         private static async Task<IResult> AddStudentToGroup(
             Guid groupId,
             Guid studentId,
-            IGroupService groupService)
+            IGroupRepository groupRepository,
+            IStudentRepository studentRepository,
+            IMapper mapper)
         {
+            var group = await groupRepository.GetByIdAsync(groupId);
+
+            if (group is null)
+            {
+                return Results.NotFound("Group does not exist");
+            }
+
+            var student = await studentRepository.GetByIdAsync(studentId);
+
+            if (student is null)
+            {
+                return Results.NotFound("Required student does not exist");
+            }
+
+            if (group.Students.Contains(student))
+            {
+                return Results.Problem("The student is already part of the group");
+            }
+
             try
             {
-                var result = await groupService.AddStudent(studentId, groupId);
-                if (!result)
-                {
-                    return Results.Problem("Error while preccessing");
-                }
+                group.Students.Add(student);
+                await groupRepository.SaveAsync();
 
-                return Results.Ok();
+                var dto = mapper.Map<GroupDTO>(group);
+
+                return Results.Ok(dto);
             }
             catch (Exception e)
             {
@@ -144,19 +162,35 @@ namespace GroupService.Endpoints
         private static async Task<IResult> RemoveStudentFromGroup(
             Guid groupId,
             Guid studentId,
-            IGroupService groupService)
+            IGroupRepository groupRepository,
+            IStudentRepository studentRepository)
         {
+            var group = await groupRepository.GetByIdAsync(groupId);
+
+            if (group is null)
+            {
+                return Results.NotFound("Group does not exist");
+            }
+
+            var student = await studentRepository.GetByIdAsync(studentId);
+
+            if (student is null)
+            {
+                return Results.NotFound("Required student does not exist");
+            }
+
+            if (!group.Students.Contains(student))
+            {
+                return Results.NotFound("The student is not a part of the group");
+            }
 
             try
             {
-                var result = await groupService.RemoveStudent(studentId, groupId);
+                group.Students.Remove(student);
 
-                if (!result)
-                {
-                    return Results.Problem("Error while precessing");
-                }
+                await groupRepository.SaveAsync();
 
-                return Results.Ok();
+                return Results.NoContent();
             }
             catch (Exception e)
             {
@@ -165,20 +199,29 @@ namespace GroupService.Endpoints
         }
 
         private static async Task<IResult> ChangeGroupTeacher(
-            Guid teacherId,
             Guid groupId,
-            IGroupService groupService)
+            Guid teacherId,
+            IGroupRepository groupRepository,
+            IMapper mapper)
         {
+            var group = await groupRepository.GetByIdAsync(groupId);
+
+            if (group is null)
+            {
+                return Results.NotFound("Required group does not exist");
+            }
+
             try
             {
-                var result = await groupService.ChangeTeacher(teacherId, groupId);
-
-                if (!result)
+                if (group.TeacherId != teacherId)
                 {
-                    return Results.Problem("Error while precessing");
+                    group.TeacherId = teacherId;
+                    await groupRepository.SaveAsync();
                 }
 
-                return Results.Ok();
+                var dto = mapper.Map<GroupDTO>(group);
+
+                return Results.Ok(dto);
             }
             catch (Exception e)
             {
@@ -188,24 +231,29 @@ namespace GroupService.Endpoints
 
         private static async Task<IResult> RenameGroup(
             Guid id,
-            string newName,
-            IGroupService groupService)
+            GroupEditDto request,
+            IGroupRepository groupRepository,
+            IMapper mapper)
         {
-            if (string.IsNullOrEmpty(newName))
+            if (request is null)
             {
-                return Results.BadRequest("Group name cannot be empty");
+                return Results.BadRequest();
             }
 
-            try
-            {
-                var updatedGroup = await groupService.Rename(id, newName);
+            var group = await groupRepository.GetByIdAsync(id);
 
-                return Results.Ok();
-            }
-            catch (Exception e)
+            if (group is null)
             {
-                return Results.Problem(e.Message);
+                return Results.NotFound("Required group does not exist");
             }
+
+            group.Name = request.Name;
+
+            await groupRepository.SaveAsync();
+
+            var dto = mapper.Map<GroupDTO>(group);
+
+            return Results.Ok(dto);
         }
 
     }
