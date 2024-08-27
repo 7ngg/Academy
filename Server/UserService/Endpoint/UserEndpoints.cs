@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using DataLayer.Models;
+using System.Text.Json;
 using UserService.Data;
 using UserService.Repositories;
+using UserService.Validators;
 
 namespace UserService.Endpoint
 {
@@ -57,11 +59,20 @@ namespace UserService.Endpoint
         }
 
         private static async Task<IResult> CreateUser(
-            UserCreateDto userDto,
+            UserCreateDto request,
             IUserRepository userRepository,
             IMapper mapper)
         {
-            var user = mapper.Map<User>(userDto);
+            var validator = new UserCreateValidator();
+            var validationResult = validator.Validate(request);
+
+            if (!validationResult.IsValid)
+            {
+                var errors = JsonSerializer.Serialize(validationResult.Errors);
+                return Results.Problem(errors);
+            }
+
+            var user = mapper.Map<User>(request);
 
             await userRepository.Create(user);
             await userRepository.Save();
