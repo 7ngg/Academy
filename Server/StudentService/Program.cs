@@ -10,10 +10,12 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AcademyContext>(opts =>
 {
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("Local"));
+    opts.UseInMemoryDatabase("InMemAcademy");
 });
 
 builder.Services.AddHttpClient();
+
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddApiAuthentication(builder.Configuration);
 

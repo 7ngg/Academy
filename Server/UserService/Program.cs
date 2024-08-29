@@ -10,10 +10,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-builder.Services.AddDbContext<AcademyContext>(opts =>
-{
-    opts.UseInMemoryDatabase("InMemAcademy");
-});
+builder.Services.AddDbContext<AcademyContext>(opts => opts.UseInMemoryDatabase("UsersInMemo"));
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 

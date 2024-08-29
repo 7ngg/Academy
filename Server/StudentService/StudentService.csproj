@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.8" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
 	<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.7" />
   </ItemGroup>
@@ -19,7 +21,7 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="../DataLayer/DataLayer.csproj"/>
+		<ProjectReference Include="../DataLayer/DataLayer.csproj" />
 	</ItemGroup>
 
 </Project>

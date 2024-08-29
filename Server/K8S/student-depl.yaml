@@ -1,0 +1,32 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: student-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: studentservice
+  template:
+    metadata:
+      labels:
+        app: studentservice
+    spec:
+      containers:
+        - name: studentservice
+          image: tng1/studentservice:latest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: student-clusterip-srv
+spec:
+  type: ClusterIP
+  selector:
+    app: studentservice
+  ports:
+    - name: studentservice
+      protocol: TCP
+      port: 8080
+      targetPort: 8080

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: userservice
+  template:
+    metadata:
+      labels:
+        app: userservice
+    spec:
+      containers:
+        - name: userservice
+          image: tng1/userservice:latest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-clusterip-srv
+spec:
+  type: ClusterIP
+  selector:
+    app: userservice
+  ports:
+    - name: userservice
+      protocol: TCP
+      port: 8080
+      targetPort: 8080

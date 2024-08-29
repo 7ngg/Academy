@@ -1,9 +1,12 @@
-﻿using DataLayer.Contexts;
+﻿using AutoMapper;
+using DataLayer.Contexts;
 using DataLayer.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using StudentService.Data;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace StudentService.Endpoints
 {
@@ -12,34 +15,34 @@ namespace StudentService.Endpoints
         public static IEndpointRouteBuilder MapStudentEndpoints(this IEndpointRouteBuilder app)
         {
             app.MapGet("students", GetAllStudents)
-                .RequireAuthorization("ADMIN")
                 .WithName("GetAllStudents")
-                .WithDescription("Returns a list of all students");
+                .WithDescription("Returns a list of all students")
+                .WithOpenApi();
 
             app.MapGet("students/{id}", GetStudentById)
-                .RequireAuthorization("ADMIN")
                 .WithName(nameof(GetStudentById))
-                .WithDescription("Returns a specified student by id");
+                .WithDescription("Returns a specified student by id")
+                .WithOpenApi();
 
             app.MapGet("students/self", GetSelf)
-                .RequireAuthorization("STUDENT")
                 .WithName("GetSelfData")
-                .WithDescription("Return students self data");
+                .WithDescription("Return students self data")
+                .WithOpenApi();
 
             app.MapPost("students", AddStudent)
-                .RequireAuthorization("ADMIN")
                 .WithName("AddStudent")
-                .WithDescription("Adds new student to academy");
+                .WithDescription("Adds new student to academy")
+                .WithOpenApi();
 
             app.MapDelete("students/{id}", RemoveStudent)
-                .RequireAuthorization("ADMIN")
                 .WithName("RemoveStudentById")
-                .WithDescription("Removes student by a specified id");
+                .WithDescription("Removes student by a specified id")
+                .WithOpenApi();
 
             app.MapPut("students/{id}", EditStudent)
-                .RequireAuthorization("ADMIN")
                 .WithName("RemoveStudent")
-                .WithDescription("Removes student with specified id");
+                .WithDescription("Removes student with specified id")
+                .WithOpenApi();
 
             return app;
         }
@@ -74,30 +77,18 @@ namespace StudentService.Endpoints
 
         private static async Task<IResult> AddStudent(
             StudentDTO studentDTO, 
-            HttpClient httpClient, 
-            HttpContext httpContext,
-            AcademyContext context)
+            HttpClient httpClient,
+            AcademyContext context,
+            IMapper mapper)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5094/api/users")
-            {
-                Content = JsonContent.Create(new
-                {
-                    Name = studentDTO.FirstName,
-                    Surname = studentDTO.LastName,
-                    Username = studentDTO.Username,
-                    Password = studentDTO.Password,
-                    Email = studentDTO.Email
-                }),
-            };
+            var userToCreate = mapper.Map<UserDTO>(studentDTO);
 
-            var token = httpContext.Request.Cookies["tasty-cookies"];
+            var httpContent = new StringContent(
+                JsonSerializer.Serialize(userToCreate),
+                Encoding.UTF8,
+                "application/json");
 
-            if (token != null)
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
-
-            var response = await httpClient.SendAsync(request);
+            var response = await httpClient.PostAsync("http://user-clusterip-srv:8080/users", httpContent);
 
             if (!response.IsSuccessStatusCode)
             {
