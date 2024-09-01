@@ -1,8 +1,6 @@
 ﻿using AuthService.Data.DTOs;
 using AuthService.Interfaces;
 using AuthService.Services;
-using AuthService.Validators;
-using DataLayer.Contexts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,13 +8,11 @@ namespace AuthService.Controllers
 {
     public class AuthController : ControllerBase
     {
-        private readonly AcademyContext _context;
         private readonly UserService _userService;
         private readonly ITokenService _tokenService;
 
-        public AuthController(AcademyContext context, UserService userService, ITokenService tokenService)
+        public AuthController(UserService userService, ITokenService tokenService)
         {
-            _context = context;
             _userService = userService;
             _tokenService = tokenService;
         }
@@ -24,7 +20,7 @@ namespace AuthService.Controllers
         [HttpGet("RefreshTokenTest")]
         public IActionResult RefreshTokenTest()
         {
-            return Ok(_tokenService.GenerateRefreshToken());
+            return Ok(_tokenService.GenerateRandomToken());
         }
 
         [HttpPost("signup")]

@@ -45,7 +45,7 @@ namespace AuthService.Services
             return tokenValue;
         }
 
-        public async Task<string> GenerateRefreshToken()
+        public async Task<string> GenerateRandomToken()
         {
             var refreshToken = new byte[64];
             using var rng = RandomNumberGenerator.Create();

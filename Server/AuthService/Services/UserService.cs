@@ -2,28 +2,34 @@
 using AuthService.Data.DTOs;
 using AuthService.Extensions;
 using AuthService.Interfaces;
-using DataLayer.Contexts;
+using DataLayer.Models;
+using Microsoft.AspNetCore.Mvc;
+using System.Net;
+using System.Net.Mail;
 
 namespace AuthService.Services
 {
+    [ApiController]
     public class UserService
     {
         private readonly IPasswordHasher _passwordHasher;
         private readonly IUserRepository _userRepository;
         private readonly ITokenService _tokenService;
-
-        private readonly AcademyContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly ICacheService _cacheService;
 
         public UserService(
             IPasswordHasher passwordHasher,
             IUserRepository userRepository,
             ITokenService tokenService,
-            AcademyContext context)
+            IConfiguration configuration,
+            ICacheService cacheService)
         {
             _passwordHasher = passwordHasher;
             _userRepository = userRepository;
             _tokenService = tokenService;
-            _context = context;
+            _configuration = configuration;
+            _cacheService = cacheService;
         }
 
         public async Task SignUp(SignUpDTO request)
@@ -36,6 +42,7 @@ namespace AuthService.Services
                 request.Email, request.Name, request.Surname);
 
             await _userRepository.AddAsync(user);
+            await SendVerification(user);
         }
 
         public async Task<TokenData> SignIn(string username, string password)
@@ -56,7 +63,7 @@ namespace AuthService.Services
             }
 
             var accesstoken = await _tokenService.Generate(user);
-            var refreshToken = await _tokenService.GenerateRefreshToken();
+            var refreshToken = await _tokenService.GenerateRandomToken();
 
             return new()
             {
@@ -73,7 +80,7 @@ namespace AuthService.Services
             var principal = await _tokenService.GetPrincipalFromExpiredToken(data.AccessToken);
 
             var userId = principal.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
-            var user = await _context.Users.FindAsync(userId);
+            var user = _userRepository.Filter(u => u.Id.ToString() == userId).First();
 
             if (user is null ||
                 user.RefreshToken != data.RefreshToken ||
@@ -84,13 +91,13 @@ namespace AuthService.Services
             }
 
             var accessToken = await _tokenService.Generate(user);
-            var refreshToken = await _tokenService.GenerateRefreshToken();
+            var refreshToken = await _tokenService.GenerateRandomToken();
             var expiryTime = DateTime.UtcNow.AddDays(1);
 
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = expiryTime;
 
-            await _context.SaveChangesAsync();
+            await _userRepository.SaveAsync();
 
             return new TokenData()
             {
@@ -98,6 +105,29 @@ namespace AuthService.Services
                 RefreshToken = refreshToken,
                 RefreshTokenExpired = expiryTime
             };
+        }
+
+        private async Task SendVerification(User user)
+        {
+            string? originEmail = _configuration.GetSection("smtp").GetSection("originEmail").Value;
+            string? password = _configuration.GetSection("smtp").GetSection("password").Value;
+            string? smtpAdress = _configuration.GetSection("smtp").GetSection("adress").Value;
+            int smtpPort = Convert.ToInt32(_configuration.GetSection("smtp").GetSection("port").Value);
+
+            var verificationToken = await _tokenService.GenerateRandomToken();
+
+            string subject = "Academy account confirmation";
+            string body = $"https://localhost:7171/verify?token={verificationToken}";
+
+            await _cacheService.Set<string>(verificationToken, user.Id.ToString(), DateTime.UtcNow.AddMinutes(3));
+
+            var smtp = new SmtpClient(smtpAdress, smtpPort)
+            {
+                EnableSsl = true,
+                Credentials = new NetworkCredential(originEmail, password)
+            };
+
+            await smtp.SendMailAsync(originEmail, user.Email, subject, body);
         }
     }
 }

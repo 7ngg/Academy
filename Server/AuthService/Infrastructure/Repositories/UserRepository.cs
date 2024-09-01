@@ -2,6 +2,7 @@
 using DataLayer.Contexts;
 using DataLayer.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace AuthService.Infrastructure.Repositories
 {
@@ -12,6 +13,11 @@ namespace AuthService.Infrastructure.Repositories
         public UserRepository(AcademyContext context)
         {
             _context = context;
+        }
+
+        public IEnumerable<User> Filter(Expression<Func<User, bool>> expression)
+        {
+            return _context.Users.Where(expression);
         }
 
         public async Task AddAsync(User user)
@@ -33,6 +39,11 @@ namespace AuthService.Infrastructure.Repositories
             }
 
             return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+        }
+
+        public async Task<bool> SaveAsync()
+        {
+            return await _context.SaveChangesAsync() >= 0;
         }
     }
 }

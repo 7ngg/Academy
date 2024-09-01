@@ -10,7 +10,11 @@ using FluentValidation;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.EntityFrameworkCore;
 
+Console.WriteLine("--> Application started");
+
 var builder = WebApplication.CreateBuilder(args);
+
+Console.WriteLine($"--> Current environment: {builder.Environment.EnvironmentName}");
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -28,13 +32,22 @@ builder.Services.AddScoped<UserService>();
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ICacheService, CacheService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<SignUpValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<SignInValidator>();
 
 builder.Services.AddDbContext<AcademyContext>(opts =>
 {
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("Local"));
+    if (builder.Environment.IsDevelopment())
+    {
+        Console.WriteLine("--> Using in-memory db");
+        opts.UseInMemoryDatabase("AuthInMemo");
+    }
+    else
+    {
+        opts.UseSqlServer(builder.Configuration.GetConnectionString("Local"));
+    }
 });
 
 var app = builder.Build();

@@ -6,7 +6,7 @@ namespace AuthService.Interfaces
     public interface ITokenService
     {
         Task<string> Generate(User user);
-        Task<string> GenerateRefreshToken();
+        Task<string> GenerateRandomToken();
         Task<ClaimsIdentity> GetPrincipalFromExpiredToken(string token);
     }
 }
