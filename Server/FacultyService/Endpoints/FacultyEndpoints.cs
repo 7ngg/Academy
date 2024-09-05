@@ -10,37 +10,37 @@ namespace FacultyService.Endpoints
         public static IEndpointRouteBuilder MapFacultyEndpoints(this IEndpointRouteBuilder app)
         {
             app.MapGet("faculties", GetFaculties)
-                .WithName(nameof(GetFaculties))
+                .WithSummary(nameof(GetFaculties))
                 .WithDescription("Returns a list of faculties")
                 .WithOpenApi();
 
             app.MapGet("faculties/{id}", GetFacultyById)
-                .WithName(nameof(GetFacultyById))
+                .WithSummary(nameof(GetFacultyById))
                 .WithDescription("Returns a specifies faculty by id")
                 .WithOpenApi();
 
             app.MapPost("faculties", CreateFaculty)
-                .WithName(nameof(CreateFaculty))
+                .WithSummary(nameof(CreateFaculty))
                 .WithDescription("Create a new faculty")
                 .WithOpenApi();
 
             app.MapPost("faculties/{facultyId}/groups", AddGroupToFaculty)
-                .WithName(nameof(AddGroupToFaculty))
+                .WithSummary(nameof(AddGroupToFaculty))
                 .WithDescription("Adds a group to a faculty")
                 .WithOpenApi();
 
             app.MapDelete("faculties/{id}", RemoveFaculty)
-                .WithName(nameof(RemoveFaculty))
+                .WithSummary(nameof(RemoveFaculty))
                 .WithDescription("Remove a specified faculty by id")
                 .WithOpenApi();
 
             app.MapDelete("faculties/{facultyId}/groups/{groupId}", RemoveGroupFromFaculty)
-                .WithName(nameof(RemoveGroupFromFaculty))
+                .WithSummary(nameof(RemoveGroupFromFaculty))
                 .WithDescription("Removes a group from faculty")
                 .WithOpenApi();
 
             app.MapPatch("faculties/{id}", RenameFaculty)
-                .WithName(nameof(RenameFaculty))
+                .WithSummary(nameof(RenameFaculty))
                 .WithDescription("Renames a faculty by id")
                 .WithOpenApi();
 

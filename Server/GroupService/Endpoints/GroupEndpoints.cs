@@ -12,36 +12,36 @@ namespace GroupService.Endpoints
         public static IEndpointRouteBuilder MapGroupEndpoint(this IEndpointRouteBuilder app)
         {
             app.MapGet("groups", GetAllGroups)
-                .WithName(nameof(GetAllGroups))
+                .WithSummary(nameof(GetAllGroups))
                 .WithDescription("Return a list of all groups");
 
             app.MapGet("groups/{id}", GetGroupById)
-                .WithName(nameof(GetGroupById))
+                .WithSummary(nameof(GetGroupById))
                 .WithDescription("Return a specified group by id");
 
             app.MapPost("groups", CreateGroup)
-                .WithName(nameof(CreateGroup))
+                .WithSummary(nameof(CreateGroup))
                 .WithDescription("Creates new group");
 
             app.MapPost("groups/{groupId}/students", AddStudentToGroup)
-                .WithName(nameof(AddStudentToGroup))
+                .WithSummary(nameof(AddStudentToGroup))
                 .WithDescription("Adds a student to the group");
 
             app.MapDelete("/groups/{id}", DeleteGroup)
-                .WithName(nameof(DeleteGroup))
+                .WithSummary(nameof(DeleteGroup))
                 .WithDescription("Removes groups with a specified id");
 
             app.MapDelete("groups/{groupId}/students/{studentId}", RemoveStudentFromGroup)
-                .WithName(nameof(RemoveStudentFromGroup))
+                .WithSummary(nameof(RemoveStudentFromGroup))
                 .WithDescription("Removes a student from group");
 
             app.MapPatch("groups/{groupId}/teacher", ChangeGroupTeacher)
-                .WithName(nameof(ChangeGroupTeacher))
+                .WithSummary(nameof(ChangeGroupTeacher))
                 .WithDescription("Changes group's teacher");
 
             app.MapPatch("groups/{id}", RenameGroup)
                 .RequireAuthorization("ADMIN")
-                .WithName(nameof(RenameGroup))
+                .WithSummary(nameof(RenameGroup))
                 .WithDescription("Changes group's name");
 
             return app;

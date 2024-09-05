@@ -10,37 +10,37 @@ namespace DepartmentService.Endpoints
         public static IEndpointRouteBuilder MapDepartmentEnpoints(this IEndpointRouteBuilder app)
         {
             app.MapGet("departments", GetAllDepartments)
-                .WithName(nameof(GetAllDepartments))
+                .WithSummary(nameof(GetAllDepartments))
                 .WithDescription("Return a list of all departments")
                 .WithOpenApi();
 
             app.MapGet("departments/{id}", GetDepartmnetById)
-                .WithName(nameof(GetDepartmnetById))
+                .WithSummary(nameof(GetDepartmnetById))
                 .WithDescription("Returns a specifies department by id")
                 .WithOpenApi();
 
             app.MapPost("departments", CreateDepartment)
-                .WithName(nameof(CreateDepartment))
+                .WithSummary(nameof(CreateDepartment))
                 .WithDescription("Creates a new department")
                 .WithOpenApi();
 
             app.MapPost("departments/{departmentId}/teachers", AddTeacherToDepartment)
-                .WithName(nameof(AddTeacherToDepartment))
+                .WithSummary(nameof(AddTeacherToDepartment))
                 .WithDescription("Adds a teacher to department")
                 .WithOpenApi();
 
             app.MapDelete("departments/{id}", RemoveDepartment)
-                .WithName(nameof(RemoveDepartment))
+                .WithSummary(nameof(RemoveDepartment))
                 .WithDescription("Deletes a specified department by id")
                 .WithOpenApi();
 
             app.MapDelete("departments/{departmentId}/teachers/{teacherId}", RemoveTeacherFromDepartment)
-                .WithName(nameof(RemoveTeacherFromDepartment))
+                .WithSummary(nameof(RemoveTeacherFromDepartment))
                 .WithDescription("Removes teacher from a departments")
                 .WithOpenApi();
 
             app.MapPatch("departments/{id}", Edit)
-                .WithName(nameof(Edit))
+                .WithSummary(nameof(Edit))
                 .WithDescription("Edits a specified department")
                 .WithOpenApi();
 

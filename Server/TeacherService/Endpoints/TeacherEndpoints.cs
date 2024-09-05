@@ -10,27 +10,27 @@ namespace TeacherService.Endpoints
         public static IEndpointRouteBuilder MapTeacherEndpoints(this IEndpointRouteBuilder app)
         {
             app.MapGet("teachers", GetAllTeachers)
-                .WithName(nameof(GetAllTeachers))
-                .WithDescription("Returns a list of teachers")
-                .WithOpenApi();
+                .WithOpenApi()
+                .WithSummary(nameof(GetAllTeachers))
+                .WithDescription("Returns a list of teachers");
 
             app.MapGet("teachers/{id}", GetTeacherById)
-                .WithName(nameof(GetTeacherById))
+                .WithSummary(nameof(GetTeacherById))
                 .WithDescription("Returns a spicified teacher by id")
                 .WithOpenApi();
 
             app.MapPost("teachers", CreateTeacher)
-                .WithName(nameof(CreateTeacher))
+                .WithSummary(nameof(CreateTeacher))
                 .WithDescription("Creates a new teacher")
                 .WithOpenApi();
 
             app.MapDelete("teachers/{id}", DeleteTeacher)
-                .WithName(nameof(DeleteTeacher))
+                .WithSummary(nameof(DeleteTeacher))
                 .WithDescription("Removes a specified teacher")
                 .WithOpenApi();
 
             app.MapPatch("teachers/{id}", EditTeacher)
-                .WithName(nameof(EditTeacher))
+                .WithSummary(nameof(EditTeacher))
                 .WithDescription("Edits teacher's data")
                 .WithOpenApi();
 

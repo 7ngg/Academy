@@ -12,22 +12,22 @@ namespace UserService.Endpoint
         public static IEndpointRouteBuilder MapUserEndpoints(this IEndpointRouteBuilder app)
         {
             app.MapGet("users", GetAllUsers)
-                .WithName(nameof(GetAllUsers))
+                .WithSummary(nameof(GetAllUsers))
                 .WithDescription("Return a list of users")
                 .WithOpenApi();
 
             app.MapGet("users/{id}", GetUserById)
-                .WithName(nameof(GetUserById))
+                .WithSummary(nameof(GetUserById))
                 .WithDescription("Return a specified user by id")
                 .WithOpenApi();
 
             app.MapPost("users", CreateUser)
-                .WithName(nameof(CreateUser))
+                .WithSummary(nameof(CreateUser))
                 .WithDescription("Creates a new user")
                 .WithOpenApi();
 
             app.MapDelete("users/{id}", DeleteUser)
-                .WithName(nameof(DeleteUser))
+                .WithSummary(nameof(DeleteUser))
                 .WithDescription("Deletes a specified user by id")
                 .WithOpenApi();
 

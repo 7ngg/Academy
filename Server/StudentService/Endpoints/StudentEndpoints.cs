@@ -15,32 +15,32 @@ namespace StudentService.Endpoints
         public static IEndpointRouteBuilder MapStudentEndpoints(this IEndpointRouteBuilder app)
         {
             app.MapGet("students", GetAllStudents)
-                .WithName("GetAllStudents")
+                .WithSummary("GetAllStudents")
                 .WithDescription("Returns a list of all students")
                 .WithOpenApi();
 
             app.MapGet("students/{id}", GetStudentById)
-                .WithName(nameof(GetStudentById))
+                .WithSummary(nameof(GetStudentById))
                 .WithDescription("Returns a specified student by id")
                 .WithOpenApi();
 
             app.MapGet("students/self", GetSelf)
-                .WithName("GetSelfData")
+                .WithSummary("GetSelfData")
                 .WithDescription("Return students self data")
                 .WithOpenApi();
 
             app.MapPost("students", AddStudent)
-                .WithName("AddStudent")
+                .WithSummary("AddStudent")
                 .WithDescription("Adds new student to academy")
                 .WithOpenApi();
 
             app.MapDelete("students/{id}", RemoveStudent)
-                .WithName("RemoveStudentById")
+                .WithSummary("RemoveStudentById")
                 .WithDescription("Removes student by a specified id")
                 .WithOpenApi();
 
             app.MapPut("students/{id}", EditStudent)
-                .WithName("RemoveStudent")
+                .WithSummary("RemoveStudent")
                 .WithDescription("Removes student with specified id")
                 .WithOpenApi();
 
