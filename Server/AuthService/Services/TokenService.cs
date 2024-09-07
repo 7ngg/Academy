@@ -45,15 +45,14 @@ namespace AuthService.Services
             return tokenValue;
         }
 
-        public async Task<string> GenerateRandomToken()
+        public string GenerateRandomToken()
         {
-            var refreshToken = new byte[64];
-            using var rng = RandomNumberGenerator.Create();
+            var timestamp = DateTime.UtcNow.ToBinary().ToString();
+            var uid = Guid.NewGuid().ToString();
 
-            rng.GetBytes(refreshToken);
+            var token = $"{timestamp}{uid}";
 
-            return Convert.ToBase64String(refreshToken)
-                ?? throw new ArgumentNullException(nameof(refreshToken));
+            return token;
         }
 
         public async Task<ClaimsIdentity> GetPrincipalFromExpiredToken(string token)

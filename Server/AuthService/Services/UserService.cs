@@ -81,7 +81,7 @@ namespace AuthService.Services
             }
 
             var accesstoken = await _tokenService.Generate(user);
-            var refreshToken = await _tokenService.GenerateRandomToken();
+            var refreshToken = _tokenService.GenerateRandomToken();
             var refreshTokenExpires = DateTime.UtcNow.AddDays(1);
 
             user.RefreshToken = refreshToken;
@@ -129,7 +129,7 @@ namespace AuthService.Services
             }
 
             var accessToken = await _tokenService.Generate(user);
-            var refreshToken = await _tokenService.GenerateRandomToken();
+            var refreshToken = _tokenService.GenerateRandomToken();
             var expiryTime = DateTime.UtcNow.AddDays(1);
 
             user.RefreshToken = refreshToken;
@@ -155,7 +155,7 @@ namespace AuthService.Services
 
         private async Task SendVerification(User user)
         {
-            var verificationToken = await _tokenService.GenerateRandomToken();
+            var verificationToken = _tokenService.GenerateRandomToken();
 
             string subject = "Academy account confirmation";
             string body = $"https://localhost:7171/verify?token={verificationToken}";
