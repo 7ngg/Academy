@@ -3,13 +3,11 @@ using AuthService.Data.DTOs;
 using AuthService.Extensions;
 using AuthService.Interfaces;
 using DataLayer.Models;
-using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Net.Mail;
 
 namespace AuthService.Services
 {
-    [ApiController]
     public class UserService
     {
         private readonly IPasswordHasher _passwordHasher;
@@ -17,19 +15,22 @@ namespace AuthService.Services
         private readonly ITokenService _tokenService;
         private readonly IConfiguration _configuration;
         private readonly ICacheService _cacheService;
+        private readonly IEmailSender _emailSender;
 
         public UserService(
             IPasswordHasher passwordHasher,
             IUserRepository userRepository,
             ITokenService tokenService,
             IConfiguration configuration,
-            ICacheService cacheService)
+            ICacheService cacheService,
+            IEmailSender emailSender)
         {
             _passwordHasher = passwordHasher;
             _userRepository = userRepository;
             _tokenService = tokenService;
             _configuration = configuration;
             _cacheService = cacheService;
+            _emailSender = emailSender;
         }
 
         public async Task SignUp(SignUpDTO request)
@@ -45,32 +46,49 @@ namespace AuthService.Services
             await SendVerification(user);
         }
 
-        public async Task<TokenData> SignIn(string username, string password)
+        public async Task<(TokenData? tokenData, Error? error)> SignIn(
+            string username, 
+            string password)
         {
             var user = await _userRepository.GetByUsernameAsync(username);
 
             if (user == null)
             {
-                // Exception
+                return (
+                    null,
+                    new()
+                    {
+                        Code = 404,
+                        IsError = true,
+                        Message = "User not found"
+                    }
+                );
             }
 
             var passwordCheck = _passwordHasher.Verify(password, user.PasswordHash);
 
             if (!passwordCheck)
             {
-                // TODO: Custom exception
-                throw new Exception("Что то случилось");
+                return (
+                    null,
+                    new()
+                    {
+                        Code = 401,
+                        IsError = true,
+                        Message = "Invalid username or password"
+                    }
+                );
             }
 
             var accesstoken = await _tokenService.Generate(user);
             var refreshToken = await _tokenService.GenerateRandomToken();
 
-            return new()
+            return (new()
             {
                 AccessToken = accesstoken,
                 RefreshToken = refreshToken,
                 RefreshTokenExpired = DateTime.UtcNow.AddDays(1),
-            };
+            }, null);
         }
 
         public async Task<TokenData> RefreshTokenAsync(TokenData data)
@@ -109,25 +127,17 @@ namespace AuthService.Services
 
         private async Task SendVerification(User user)
         {
-            string? originEmail = _configuration.GetSection("smtp").GetSection("originEmail").Value;
-            string? password = _configuration.GetSection("smtp").GetSection("password").Value;
-            string? smtpAdress = _configuration.GetSection("smtp").GetSection("adress").Value;
-            int smtpPort = Convert.ToInt32(_configuration.GetSection("smtp").GetSection("port").Value);
-
             var verificationToken = await _tokenService.GenerateRandomToken();
 
             string subject = "Academy account confirmation";
             string body = $"https://localhost:7171/verify?token={verificationToken}";
 
-            await _cacheService.Set<string>(verificationToken, user.Id.ToString(), DateTime.UtcNow.AddMinutes(3));
+            await _cacheService.Set<string>(
+                verificationToken, 
+                user.Id.ToString(), 
+                DateTime.UtcNow.AddMinutes(5));
 
-            var smtp = new SmtpClient(smtpAdress, smtpPort)
-            {
-                EnableSsl = true,
-                Credentials = new NetworkCredential(originEmail, password)
-            };
-
-            await smtp.SendMailAsync(originEmail, user.Email, subject, body);
+            await _emailSender.SendAsync(user.Email, subject, body);
         }
     }
 }
