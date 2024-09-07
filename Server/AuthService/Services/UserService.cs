@@ -43,11 +43,11 @@ namespace AuthService.Services
                 request.Email, request.Name, request.Surname);
 
             await _userRepository.AddAsync(user);
-            await SendVerification(user);
+            //await SendVerification(user);
         }
 
-        public async Task<(TokenData? tokenData, Error? error)> SignIn(
-            string username, 
+        public async Task<(TokenData? tokenData, Status status)> SignIn(
+            string username,
             string password)
         {
             var user = await _userRepository.GetByUsernameAsync(username);
@@ -65,9 +65,9 @@ namespace AuthService.Services
                 );
             }
 
-            var passwordCheck = _passwordHasher.Verify(password, user.PasswordHash);
+            var isPasswordValid = _passwordHasher.Verify(password, user.PasswordHash);
 
-            if (!passwordCheck)
+            if (!isPasswordValid)
             {
                 return (
                     null,
@@ -82,16 +82,30 @@ namespace AuthService.Services
 
             var accesstoken = await _tokenService.Generate(user);
             var refreshToken = await _tokenService.GenerateRandomToken();
+            var refreshTokenExpires = DateTime.UtcNow.AddDays(1);
 
-            return (new()
-            {
-                AccessToken = accesstoken,
-                RefreshToken = refreshToken,
-                RefreshTokenExpired = DateTime.UtcNow.AddDays(1),
-            }, null);
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = refreshTokenExpires;
+
+            await _userRepository.SaveAsync();
+
+            return (
+                new()
+                {
+                    AccessToken = accesstoken,
+                    RefreshToken = refreshToken,
+                    RefreshTokenExpired = refreshTokenExpires,
+                },
+                new()
+                {
+                    Code = 200,
+                    Message = "Sign in successful",
+                    IsError = false,
+                }
+            );
         }
 
-        public async Task<TokenData> RefreshTokenAsync(TokenData data)
+        public async Task<(TokenData? tokenData, Status status)> RefreshTokenAsync(TokenInfoDTO data)
         {
             ArgumentNullException.ThrowIfNull(data);
 
@@ -104,8 +118,14 @@ namespace AuthService.Services
                 user.RefreshToken != data.RefreshToken ||
                 user.RefreshTokenExpiryTime < DateTime.Now)
             {
-                // TODO: Custom Exception
-                throw new Exception($"From {nameof(RefreshTokenAsync)}");
+                return (
+                    null,
+                    new()
+                    {
+                        Code = 400,
+                        Message = "Cannot refresh token",
+                        IsError = true,
+                    });
             }
 
             var accessToken = await _tokenService.Generate(user);
@@ -117,12 +137,20 @@ namespace AuthService.Services
 
             await _userRepository.SaveAsync();
 
-            return new TokenData()
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                RefreshTokenExpired = expiryTime
-            };
+            return (
+                new()
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    RefreshTokenExpired = expiryTime
+                },
+                new()
+                {
+                    Code = 200,
+                    Message = "Refreshed successfully",
+                    IsError = false
+                }
+            );
         }
 
         private async Task SendVerification(User user)
@@ -133,8 +161,8 @@ namespace AuthService.Services
             string body = $"https://localhost:7171/verify?token={verificationToken}";
 
             await _cacheService.Set<string>(
-                verificationToken, 
-                user.Id.ToString(), 
+                verificationToken,
+                user.Id.ToString(),
                 DateTime.UtcNow.AddMinutes(5));
 
             await _emailSender.SendAsync(user.Email, subject, body);

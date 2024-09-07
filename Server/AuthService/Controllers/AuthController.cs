@@ -1,4 +1,5 @@
-﻿using AuthService.Data.DTOs;
+﻿using AuthService.Data;
+using AuthService.Data.DTOs;
 using AuthService.Interfaces;
 using AuthService.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -6,21 +7,29 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AuthService.Controllers
 {
+    [ApiController]
     public class AuthController : ControllerBase
     {
         private readonly UserService _userService;
-        private readonly ITokenService _tokenService;
+        private readonly IUserRepository _userRepository;
 
-        public AuthController(UserService userService, ITokenService tokenService)
+        public AuthController(UserService userService, ITokenService tokenService, IUserRepository userRepository)
         {
             _userService = userService;
-            _tokenService = tokenService;
+            _userRepository = userRepository;
         }
 
-        [HttpGet("RefreshTokenTest")]
-        public IActionResult RefreshTokenTest()
+        [HttpPost("RefreshToken")]
+        public async Task<IActionResult> RefreshTokenTest(TokenInfoDTO request)
         {
-            return Ok(_tokenService.GenerateRandomToken());
+            var (v, status) = await _userService.RefreshTokenAsync(request);
+
+            if (status.IsError)
+            {
+                return BadRequest(status);
+            }
+
+            return Ok(v);
         }
 
         [HttpPost("signup")]
@@ -44,7 +53,12 @@ namespace AuthService.Controllers
                 return BadRequest(ModelState);
             }
 
-            var tokenData = await _userService.SignIn(request.Username, request.Password);
+            var (tokenData, status) = await _userService.SignIn(request.Username, request.Password);
+
+            if (status.IsError)
+            {
+                return BadRequest(status);
+            }
 
             HttpContext.Response.Cookies.Append("tasty-cookies", tokenData.AccessToken);
             HttpContext.Response.Cookies.Append("refresh-tasty-cookies", tokenData.RefreshToken);
@@ -53,7 +67,6 @@ namespace AuthService.Controllers
         }
 
         [HttpPost("check")]
-        [Authorize(Roles = "STUDENT")]
         public IActionResult Check()
         {
             return Ok("Authorized");

@@ -1,6 +1,6 @@
 ﻿namespace AuthService.Data
 {
-    public class Error
+    public class Status
     {
         public required int Code { get; init; }
         public required string Message { get; init; }

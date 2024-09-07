@@ -47,7 +47,15 @@ namespace AuthService.Services
                 Credentials = new NetworkCredential(_originEmail, _password)
             };
 
-            await client.SendMailAsync(_originEmail!, recipient, subject, body);
+            var message = new MailMessage()
+            {
+                From = new(_originEmail!),
+                Subject = subject, 
+                Body = body,
+            };
+            message.CC.Add(new(recipient));
+
+            await client.SendMailAsync(message);
         }
     }
 }
